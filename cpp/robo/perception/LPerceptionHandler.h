@@ -37,6 +37,7 @@ namespace robo
 
 			public :
 
+
 			LPerceptionHandler()
 			{
 				m_imgLoader = new LImageLoader( string( PATH_TEST_DATASET ), string( PATH_CALIBRATION ) );
@@ -247,6 +248,93 @@ namespace robo
 				cout << "px: " << px << " - py: " << py << endl;
 			}
 
+			void test_pick_obstacles_ranges()
+			{
+
+			}
+
+			static int g_threshold_h_min;
+			static int g_threshold_h_max;
+			static int g_threshold_s_min;
+			static int g_threshold_s_max;
+			static int g_threshold_v_min;
+			static int g_threshold_v_max;
+
+			static cv::Mat* g_img_rock_hsv;
+
+			void test_pick_ranges()
+			{
+				cv::Mat _imgRock_bgr = m_imgLoader->getCalibrationImage_rock();
+				cv::Mat _imgRock_hsv;
+				cv::cvtColor( _imgRock_bgr, _imgRock_hsv, CV_BGR2HSV );
+
+				LPerceptionHandler::g_threshold_h_min = 0;
+				LPerceptionHandler::g_threshold_h_max = 255;
+				LPerceptionHandler::g_threshold_s_min = 0;
+				LPerceptionHandler::g_threshold_s_max = 255;
+				LPerceptionHandler::g_threshold_v_min = 0;
+				LPerceptionHandler::g_threshold_v_max = 255;
+
+				LPerceptionHandler::g_img_rock_hsv = & _imgRock_hsv;
+
+				cv::namedWindow( "test_pick_ranges" );
+				cv::namedWindow( "img_rock" );
+				cv::imshow( "img_rock", _imgRock_bgr );
+
+				cv::createTrackbar( "hue_min", "test_pick_ranges", 
+									&LPerceptionHandler::g_threshold_h_min, 
+									255,
+									LPerceptionHandler::test_pick_ranges_callback );
+				cv::createTrackbar( "hue_max", "test_pick_ranges", 
+									&LPerceptionHandler::g_threshold_h_max, 
+									255,
+									LPerceptionHandler::test_pick_ranges_callback );
+
+				cv::createTrackbar( "sat_min", "test_pick_ranges", 
+									&LPerceptionHandler::g_threshold_s_min, 
+									255,
+									LPerceptionHandler::test_pick_ranges_callback );
+				cv::createTrackbar( "sat_max", "test_pick_ranges", 
+									&LPerceptionHandler::g_threshold_s_max, 
+									255,
+									LPerceptionHandler::test_pick_ranges_callback );
+
+				cv::createTrackbar( "val_min", "test_pick_ranges", 
+									&LPerceptionHandler::g_threshold_v_min, 
+									255,
+									LPerceptionHandler::test_pick_ranges_callback );
+				cv::createTrackbar( "val_max", "test_pick_ranges", 
+									&LPerceptionHandler::g_threshold_v_max, 
+									255,
+									LPerceptionHandler::test_pick_ranges_callback );
+
+				LPerceptionHandler::test_pick_ranges_callback( -1, NULL );
+
+				while( true )
+				{
+					int _key = cv::waitKey( 0 );
+					if ( ( char ) _key == 27 )
+					{
+						break;
+					}
+				}
+			}
+
+			static void test_pick_ranges_callback( int _foo, void* _fun )
+			{
+				cv::Scalar _low( LPerceptionHandler::g_threshold_h_min, 
+								 LPerceptionHandler::g_threshold_s_min, 
+								 LPerceptionHandler::g_threshold_v_min );
+				cv::Scalar _high( LPerceptionHandler::g_threshold_h_max, 
+								  LPerceptionHandler::g_threshold_s_max, 
+								  LPerceptionHandler::g_threshold_v_max );
+
+				cv::Mat _img_rock_threshed;
+				cv::inRange( *LPerceptionHandler::g_img_rock_hsv, _low, _high, _img_rock_threshed );
+
+				cv::imshow( "test_pick_ranges", _img_rock_threshed );
+			}
+
 		};
 
 
@@ -255,3 +343,12 @@ namespace robo
 
 
 }
+
+
+int robo::perception::LPerceptionHandler::g_threshold_h_min = 0;
+int robo::perception::LPerceptionHandler::g_threshold_h_max = 255;
+int robo::perception::LPerceptionHandler::g_threshold_s_min = 0;
+int robo::perception::LPerceptionHandler::g_threshold_s_max = 255;
+int robo::perception::LPerceptionHandler::g_threshold_v_min = 0;
+int robo::perception::LPerceptionHandler::g_threshold_v_max = 255;
+cv::Mat* robo::perception::LPerceptionHandler::g_img_rock_hsv = NULL;

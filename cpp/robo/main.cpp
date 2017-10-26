@@ -11,7 +11,8 @@ int main()
 
 	//_pHandler.test_perspectiveTransform();
 	//_pHandler.test_color_thresholding();
-	_pHandler.test_coord_transformation();
+	//_pHandler.test_coord_transformation();
+	_pHandler.test_pick_ranges();
 
 	return 0;
 
