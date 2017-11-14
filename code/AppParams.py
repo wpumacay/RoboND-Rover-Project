@@ -1,0 +1,11 @@
+
+
+
+
+class RoverParams :
+
+	THRESHOLD_GO_FORWARD 	= 500
+	THRESHOLD_STOP_FORWARD 	= 50
+
+	
+
