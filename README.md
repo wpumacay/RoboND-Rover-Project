@@ -2,6 +2,8 @@
 
 Settings : 640x480 - Config : fantastic - FPS : 27
 
+Test video : https://www.youtube.com/watch?v=p5QjsrKnGeM
+
 ---
 ---
 
