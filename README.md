@@ -419,7 +419,7 @@ I filled the **process_image** method with all the methods involved in the image
             return [u_throttle,u_brake,u_steer]
     ```
 
-    As you can see, it's a wrapper of some other functionality I that is implemented in other classes. The main parts of the controller are its **speed** and **steer** controllers, both PID controllers I used to make the rover navigate at a certain speed and following a certain direction.
+    As you can see, it's a wrapper of some other functionality that is implemented in other classes. One of the main parts of the controller is its **speed** PID controller, which I used to make the rover navigate at a certain speed. For the direction I implemented a steer PID controller, but after some testing I ended up using just the raw average direction given by the perception step.
 
     Then, the other main component is the **ai** component, which is a state machine in charge of the navigation logic. I shall explain each component in the following part.
 
@@ -429,22 +429,22 @@ I filled the **process_image** method with all the methods involved in the image
 
     ```python
     class PIDController :
-#
+    
         def __init__( self, Kp = 5.0, Kd = 4.0, Ki = 0.001 ) :
-#
+    
             self.epv = 0.0
             self.eiv = 0.0
             self.edv = 0.0
-#
+    
             self.Kp = Kp
             self.Kd = Kd
             self.Ki = Ki
-#
+    
         def reset( self ) :
             self.epv = 0.0
             self.eiv = 0.0
             self.edv = 0.0
-#
+    
         def calculate( self, x, xRef, verbose = False ) :
             _epv = x - xRef
             self.edv = _epv - self.epv
@@ -453,11 +453,11 @@ I filled the **process_image** method with all the methods involved in the image
             _u = -( self.Kp * self.epv + self.Kd * self.edv + self.Ki * self.eiv )
             if ( verbose ) :
                 print( 'x,xRef: ', x, xRef, ' u: ', _u )
-#
+    
             return _u
     ```
 
-    The default parameters are the speed controller tunned parameters. For the steer controller I used some other tunned parameters, as you can see in the steer controller creation in the RoverMotionController class.
+    The default parameters are the speed controller tunned parameters. 
 
 *   Decision step - State machine
 
@@ -471,40 +471,40 @@ I filled the **process_image** method with all the methods involved in the image
 
     ```python
     def update( self, dt, data ) :
-        ##
+         
         self.m_data = data
-        ##
+         
         if self.m_currentState == None :
             print( 'RoverAI::update> error - it seems there is no state registered' )
             return
-        ##
+         
         self.m_currentState.update( dt, data )
         self.navpath.update( dt, data )
-        ##
+    
         if ( self.m_currentState.state == RoverFSMState.ST_FINISHED ) :
-        ##        
+                 
             self.m_fsm_change_successful = False
-            ##
+             
             if self.m_currentStateId == RoverAI.ST_LOOKING_FOR_PATH :
-            ##
+             
                 if self.m_currentState.status == 'found_navigable_area' :
                     self.setCurrentState( RoverAI.ST_FORWARD )
-                    ##
+                     
                 else :
                     self.setCurrentState( RoverAI.ST_LOOKING_FOR_PATH )
-                    ##
+                     
             elif self.m_currentStateId == RoverAI.ST_FORWARD :
-            ##
+             
                 if self.m_currentState.status == 'no_navigable_area' or \
                    self.m_currentState.status == 'timeout' :
-                   ##
+                    
                     self.setCurrentState( RoverAI.ST_BRAKING )
-                    ##
+                     
             elif self.m_currentStateId == RoverAI.ST_BRAKING :
-            ##
+             
                 if self.m_currentState.status == 'fully_stopped' :
                     self.setCurrentState( RoverAI.ST_LOOKING_FOR_PATH )
-                    ##
+                     
             if not self.m_fsm_change_successful :
                 # an error occurred in our fsm logic, check which state was it
                 print( 'RoverAI::update> error - unsuccessful state change: ', 
@@ -521,7 +521,7 @@ I filled the **process_image** method with all the methods involved in the image
 
         The main part is the **update** method ( lines 45 to 58 ). There is some other code that deals with a timeout, which is used in both this and the **forward** states to deal with weird situations. Sometimes the rover can run into some part that it can't get out even if keep going forward. If this happens, there is a timeout to deal with it and make the rover turn a bit more. In this state, basically, if the rover got stuck in the forward state, then it will try to look by turning a fixed angle some time and then just check normally for navigable terrain. This fixes that issue.
 
-    * The **Forward** state is in charge of making the rover navigate   through navigable terrain by using it's PID controllers and the perception data. You can see bulk of the state in its **update** method, from line 79 to 124.
+    * The **Forward** state is in charge of making the rover navigate   through navigable terrain by using its PID controller and the perception data. You can see the main parts of the state in its **update** method, from line 79 to 124.
 
         There, I also do some checks for funny situations the rover might run into, but the general idea is : if there is a sample in range, go for it in the direction given by the perception data; if not, just keep navigating. If there is no navigable terrain, look for path; and also check funny situations you might run into.
 
@@ -534,7 +534,7 @@ I filled the **process_image** method with all the methods involved in the image
 
     By using the explained perception and decision steps, the rover could successfully navigate the environment, get a worldmap with the requested accuracy, and pick some rocks that it might run into.
 
-    As explained, the approach I followed was to follow the perception pipeline and get some information of navigable terrain and direction to rock samples. Then, the decision step, implemented as a FSM with PID controllers for speed and steer control, made the rover follow a set cruise speed while navigating and collect rock samples that it might find in its field of view.
+    As explained, the approach I followed was to follow the perception pipeline and get some information of navigable terrain and direction to rock samples. Then, the decision step, implemented as a FSM with a PID controllers for speed control, made the rover follow a set cruise speed while navigating and collect rock samples that it might find in its field of view.
 
     To collect the rock samples I just used the direction to a sample given by the perception step, and made the rover follow that direction. It worked quite well, but there was a part I'm trying to fix that is to slow down as you go there.
 
@@ -552,7 +552,7 @@ I filled the **process_image** method with all the methods involved in the image
 
     The perception pipeline will fail in cases the thresholds are not tunned correctly. I ran into some situations, specially with the rocks, that the detection was wrong.
 
-    Also, there is a kind of issue with following the average direction of navigable terrain. In some situations the rover starts to wobble. I first thought that this was because of the steer PID controller, but the problem was actually the steer setpoint. Because of the perception pipeline, the navigable area was giving a correct direction ( say left ), but after following that direction a bit, it start returning another direction ( say right ).
+    Also, there is a kind of issue with following the average direction of navigable terrain. In some situations the rover starts to wobble. I first thought that this was because of the steer PID controller ( when I was using it ), but the problem was actually the steer setpoint. Because of the perception pipeline, the navigable area was giving a correct direction ( say left ), but after following that direction a bit, it start returning another direction ( say right ).
 
     There was also a weird situation in some part of the map were the was lots of navigable terrain, and if the rover was in some special set of positions the direction returned by the perception step made the rover go around in circles. It eventually got out of it, but after some time.
 
