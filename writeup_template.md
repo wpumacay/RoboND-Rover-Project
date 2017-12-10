@@ -372,48 +372,50 @@ I filled the **process_image** method with all the methods involved in the image
     
     I implemented a navigation controller class that is in charge of the whole navigation process. This class in located in the [RoverAI.py](https://github.com/wpumacay/RoboND-Rover-Project/blob/master/code/RoverAI.py) file, the class called called **RoverMotionController**.
 
+    There is another file, [RoverNavUtils.py](https://github.com/wpumacay/RoboND-Rover-Project/blob/master/code/RoverNavUtils.py), which is in charge of creating a path that the rover is following. The intention was to add some other utils like a navmesh, and pathplanning to that file, but for now just this simple path was implemented. It helps the rover know when it has got stuck by knowing if the current point has move a bit in a certain threshold.
+
     ```python
     class RoverMotionController :
-#
+        
         def __init__( self ) :
-#
+        
             self.m_speedController = PIDController()
             self.m_steerController = PIDController( 15.0, 15.0, 0.0 )
             self.ai = RoverAI( self )
-#
+        
         def update( self, dt, roverData ) :
             self.ai.update( dt, roverData )
-#
+        
         def restartNavigationController( self ) :
             self.m_speedController.reset()
-#
+        
         def restartSteerController( self ):
             self.m_steerController.reset()
-#
+        
         def navigationController( self, v, theta, vRef, thetaRef ) :
-#
+        #
             u_throttle = self.m_speedController.calculate( v, vRef, False )
             u_brake = 0
-#
+        
             if u_throttle < 0 :
                 u_brake = np.clip( -u_throttle ,0, 10 )
-#
+        
             u_throttle = np.clip( u_throttle, 0, 0.2 )
             u_steer = np.clip( thetaRef, -15, 15 )
-#
+        
             return [ u_throttle, u_brake, u_steer ]
-#
+        
         def steerController( self, theta, thetaRef ) :
             u_steer = self.m_steerController.calculate( theta, thetaRef, True )
             u_steer = np.clip( u_steer, -15, 15 )
-#
+        
             return [ 0, 0, u_steer ]
-#
+        
         def positionController( self, xRef, yRef ) :
-#
+        
             u_throttle = 0
             u_steer = 0
-#
+        
             return [u_throttle,u_brake,u_steer]
     ```
 
@@ -461,7 +463,7 @@ I filled the **process_image** method with all the methods involved in the image
 
     I was looking for a way to give the rover good brains, but just stuck to a simple state machine. 
 
-    The implementation is in the file [RoverAI.py](https://github.com/wpumacay/RoboND-Rover-Project/blob/master/code/decision.py).
+    The implementation is in the file [RoverAI.py](https://github.com/wpumacay/RoboND-Rover-Project/blob/master/code/RoverAI.py).
 
     As you can see, there are 3 states that I used for navigation, namely **STLookingForPath**, **STForward** and **STBraking**, which I will explain in more detail in a bit.
 
