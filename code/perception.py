@@ -127,9 +127,9 @@ def perception_step(Rover):
     
     _img_threshed_terrain   = rgb_thresh( _img_warped, _rgb_threshold_terrain_lo, _rgb_threshold_terrain_hi ) 
     _img_threshed_obstacles = rgb_thresh( _img_warped, _rgb_threshold_obstacles_lo, _rgb_threshold_obstacles_hi ) 
-    #_img_threshed_rocks     = hsv_thresh( _img_warped, _hsv_threshold_rocks_lo, _hsv_threshold_rocks_hi )
-    _img_threshed_rocks        = hsv_thresh( Rover.img, _hsv_threshold_rocks_lo, _hsv_threshold_rocks_hi )
-    _img_threshed_warped_rocks = perspect_transform( _img_threshed_rocks, _src_pts, _dst_pts )
+    _img_threshed_rocks     = hsv_thresh( _img_warped, _hsv_threshold_rocks_lo, _hsv_threshold_rocks_hi )
+    #_img_threshed_rocks        = hsv_thresh( Rover.img, _hsv_threshold_rocks_lo, _hsv_threshold_rocks_hi )
+    #_img_threshed_warped_rocks = perspect_transform( _img_threshed_rocks, _src_pts, _dst_pts )
 
     # 4) Update Rover.vision_image (this will be displayed on left side of screen)
         # Example: Rover.vision_image[:,:,0] = obstacle color-thresholded binary image
@@ -137,14 +137,14 @@ def perception_step(Rover):
         #          Rover.vision_image[:,:,2] = navigable terrain color-thresholded binary image
 
     Rover.vision_image[:, :, 0] = _img_threshed_obstacles
-    Rover.vision_image[:, :, 1] = _img_threshed_warped_rocks
+    Rover.vision_image[:, :, 1] = _img_threshed_rocks
     Rover.vision_image[:, :, 2] = _img_threshed_terrain
 
     # 5) Convert map image pixel values to rover-centric coords
 
     x_navigable_rover, y_navigable_rover = rover_coords( _img_threshed_terrain )
     x_obstacles_rover, y_obstacles_rover = rover_coords( _img_threshed_obstacles )
-    x_rocks_rover, y_rocks_rover         = rover_coords( _img_threshed_warped_rocks )
+    x_rocks_rover, y_rocks_rover         = rover_coords( _img_threshed_rocks )
 
     # 6) Convert rover-centric pixel values to world coordinates
 

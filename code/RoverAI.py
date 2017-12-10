@@ -10,8 +10,6 @@ class RoverAI :
     ST_LOOKING_FOR_PATH = 'lookingForPath'
     ST_FORWARD          = 'forward'
     ST_BRAKING          = 'braking'
-    ST_REACHING_ROCK    = 'reachingRock'
-    ST_PICKING_ROCK     = 'pickingRock'
     ST_TEST             = 'test'
 
     def __init__( self, robot ) :
