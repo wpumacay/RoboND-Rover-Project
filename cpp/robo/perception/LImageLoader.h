@@ -118,7 +118,7 @@ namespace robo
 
 			cv::Mat getCalibrationImage_rock()
 			{
-				cv::Mat _img = cv::imread( m_calImgsRocksIDs[0], cv::IMREAD_COLOR );
+				cv::Mat _img = cv::imread( m_calImgsRocksIDs[1], cv::IMREAD_COLOR );
 
 				return _img;
 			}

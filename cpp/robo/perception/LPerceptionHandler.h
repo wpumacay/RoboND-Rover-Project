@@ -308,7 +308,7 @@ namespace robo
 									255,
 									LPerceptionHandler::test_pick_ranges_callback );
 
-				LPerceptionHandler::test_pick_ranges_callback( -1, NULL );
+				LPerceptionHandler::test_pick_ranges_callback( 0, NULL );
 
 				while( true )
 				{
@@ -322,17 +322,21 @@ namespace robo
 
 			static void test_pick_ranges_callback( int _foo, void* _fun )
 			{
-				cv::Scalar _low( LPerceptionHandler::g_threshold_h_min, 
+				cv::Scalar _low( LPerceptionHandler::g_threshold_h_min * 180. / 255., 
 								 LPerceptionHandler::g_threshold_s_min, 
-								 LPerceptionHandler::g_threshold_v_min );
-				cv::Scalar _high( LPerceptionHandler::g_threshold_h_max, 
+								 LPerceptionHandler::g_threshold_v_min,
+								 255 );
+				cv::Scalar _high( LPerceptionHandler::g_threshold_h_max * 180. / 255., 
 								  LPerceptionHandler::g_threshold_s_max, 
-								  LPerceptionHandler::g_threshold_v_max );
+								  LPerceptionHandler::g_threshold_v_max,
+								  255 );
 
 				cv::Mat _img_rock_threshed;
 				cv::inRange( *LPerceptionHandler::g_img_rock_hsv, _low, _high, _img_rock_threshed );
 
 				cv::imshow( "test_pick_ranges", _img_rock_threshed );
+
+				cout << "lo: " << _low << endl;
 			}
 
 		};
