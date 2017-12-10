@@ -1,6 +1,8 @@
 import numpy as np
 import cv2
 
+from AppParams import *
+
 # Identify pixels above the threshold
 # Threshold of RGB > 160 does a nice job of identifying ground pixels only
 def color_thresh(img, rgb_thresh=(160, 160, 160)):
@@ -89,7 +91,6 @@ def perspect_transform(img, src, dst):
 # Apply the above functions in succession and update the Rover state accordingly
 def perception_step(Rover):
     # Perform perception steps to update Rover()
-    # TODO: 
 
     # NOTE: camera image is coming to you in Rover.img
 
@@ -113,20 +114,22 @@ def perception_step(Rover):
     # 3) Apply color threshold to identify navigable terrain/obstacles/rock samples
 
     # ranges for terrain segmentation
-    _hsv_threshold_terrain_lo = np.array( [ 0, 28, 184 ] )
-    _hsv_threshold_terrain_hi = np.array( [ 138, 60, 255 ] )
+    _rgb_threshold_terrain_lo = np.array( [ 160, 160, 160 ] )
+    _rgb_threshold_terrain_hi = np.array( [ 255, 255, 255 ] )
+
     # ranges for obstacle segmentation
-    _hsv_threshold_obstacles_lo = np.array( [ 0, 0, 0 ] )
-    _hsv_threshold_obstacles_hi = np.array( [ 220, 255, 181 ] )
+    _rgb_threshold_obstacles_lo = np.array( [ 0, 0, 0 ] )
+    _rgb_threshold_obstacles_hi = np.array( [ 160, 160, 160 ] )
+
     # ranges for rock segmentation
-    _hsv_threshold_rocks_lo = np.array( [ 20, 98, 40 ] )
-    _hsv_threshold_rocks_hi = np.array( [ 100, 255, 255 ] )
+    _hsv_threshold_rocks_lo = np.array( [ 50, 98, 150 ] )
+    _hsv_threshold_rocks_hi = np.array( [ 140, 255, 255 ] )
     
-    #_img_threshed_terrain   = hsv_thresh( _img_warped, _hsv_threshold_terrain_lo, _hsv_threshold_terrain_hi )
-    _img_threshed_terrain   = rgb_thresh( _img_warped, ( 160, 160, 160 ), ( 255, 255, 255 ) ) 
-    #_img_threshed_obstacles = hsv_thresh( _img_warped, _hsv_threshold_obstacles_lo, _hsv_threshold_obstacles_hi )
-    _img_threshed_obstacles = rgb_thresh( _img_warped, ( 0, 0, 0 ), ( 160, 160, 160 ) ) 
-    _img_threshed_rocks     = hsv_thresh( _img_warped, _hsv_threshold_rocks_lo, _hsv_threshold_rocks_hi )
+    _img_threshed_terrain   = rgb_thresh( _img_warped, _rgb_threshold_terrain_lo, _rgb_threshold_terrain_hi ) 
+    _img_threshed_obstacles = rgb_thresh( _img_warped, _rgb_threshold_obstacles_lo, _rgb_threshold_obstacles_hi ) 
+    #_img_threshed_rocks     = hsv_thresh( _img_warped, _hsv_threshold_rocks_lo, _hsv_threshold_rocks_hi )
+    _img_threshed_rocks        = hsv_thresh( Rover.img, _hsv_threshold_rocks_lo, _hsv_threshold_rocks_hi )
+    _img_threshed_warped_rocks = perspect_transform( _img_threshed_rocks, _src_pts, _dst_pts )
 
     # 4) Update Rover.vision_image (this will be displayed on left side of screen)
         # Example: Rover.vision_image[:,:,0] = obstacle color-thresholded binary image
@@ -134,14 +137,14 @@ def perception_step(Rover):
         #          Rover.vision_image[:,:,2] = navigable terrain color-thresholded binary image
 
     Rover.vision_image[:, :, 0] = _img_threshed_obstacles
-    Rover.vision_image[:, :, 1] = _img_threshed_rocks
+    Rover.vision_image[:, :, 1] = _img_threshed_warped_rocks
     Rover.vision_image[:, :, 2] = _img_threshed_terrain
 
     # 5) Convert map image pixel values to rover-centric coords
 
     x_navigable_rover, y_navigable_rover = rover_coords( _img_threshed_terrain )
     x_obstacles_rover, y_obstacles_rover = rover_coords( _img_threshed_obstacles )
-    x_rocks_rover, y_rocks_rover         = rover_coords( _img_threshed_rocks )
+    x_rocks_rover, y_rocks_rover         = rover_coords( _img_threshed_warped_rocks )
 
     # 6) Convert rover-centric pixel values to world coordinates
 
@@ -164,9 +167,13 @@ def perception_step(Rover):
         #          Rover.worldmap[rock_y_world, rock_x_world, 1] += 1
         #          Rover.worldmap[navigable_y_world, navigable_x_world, 2] += 1
 
-    Rover.worldmap[y_obstacles_world, x_obstacles_world, 0] += 1
-    Rover.worldmap[y_rocks_world, x_rocks_world, 1] += 1
-    Rover.worldmap[y_navigable_world, x_navigable_world, 2] += 1
+    _isRollOk = ( Rover.roll < 1 and Rover.roll >= 0 ) or ( Rover.roll <= 360 and Rover.roll > 359 )
+    _isPitchOk = ( Rover.pitch < 1 and Rover.pitch >= 0 ) or ( Rover.pitch <= 360 and Rover.pitch > 359 )
+
+    if _isRollOk and _isPitchOk :
+        Rover.worldmap[y_obstacles_world, x_obstacles_world, 0] += 1
+        Rover.worldmap[y_rocks_world, x_rocks_world, 1] += 1
+        Rover.worldmap[y_navigable_world, x_navigable_world, 2] += 1
 
     # 8) Convert rover-centric pixel positions to polar coordinates
     # Update Rover pixel distances and angles
@@ -175,4 +182,26 @@ def perception_step(Rover):
 
     Rover.nav_dists, Rover.nav_angles = to_polar_coords( x_navigable_rover, y_navigable_rover )
     
+    # 9) Check if there is a rock over there
+
+    _xn, _yn = _img_threshed_rocks.nonzero()
+
+    # Check using a threshold first
+    if len( _xn ) > RoverParams.THRESHOLD_ROCK_FOUND :
+        # Get mean direction to the rock
+        rock_dists, rock_angles = to_polar_coords( x_rocks_rover, y_rocks_rover )
+
+        if ( len( rock_angles ) > 1 ) :
+
+            rock_dir = np.mean( rock_angles )
+            rock_reach = np.mean( rock_dists )
+
+            Rover.sample_in_range['exists'] = True
+            Rover.sample_in_range['dir'] = rock_dir
+
+    else :
+
+        Rover.sample_in_range['exists'] = False
+        Rover.sample_in_range['dir'] = 0        
+
     return Rover
