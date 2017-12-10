@@ -45,7 +45,7 @@ class RoverNavPath :
 
             if self.m_lastPt != None :
                 _dist = self.dist( self.m_lastPt, _newPt )
-                print( '_dist> ', _dist )
+                #print( '_dist> ', _dist )
 
             if ( self.m_lastPt == None ) or \
                ( self.dist( self.m_lastPt, _newPt ) > RoverParams.NAVIGATION_DIST_THRESHOLD ):
@@ -55,7 +55,7 @@ class RoverNavPath :
                 self.m_sampleTimer = 0
                 self.m_timeoutExpired = False
 
-                print( 'added: ', self.m_lastPt )
+                #print( 'added: ', self.m_lastPt )
 
             elif self.m_sampleTimer > RoverParams.NAVIGATION_TIMEOUT :
 
