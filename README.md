@@ -1,7 +1,8 @@
 ## Project: Search and Sample Return
 
----
+Settings : 640x480 - Config : fantastic - FPS : 27
 
+---
 ---
 
 ### 1) Notebook Analysis
